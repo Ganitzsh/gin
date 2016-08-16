@@ -8,6 +8,7 @@ import (
 	"errors"
 	"reflect"
 	"strconv"
+	"time"
 )
 
 func mapForm(ptr interface{}, form map[string][]string) error {
@@ -90,9 +91,29 @@ func setWithProperType(valueKind reflect.Kind, val string, structField reflect.V
 		return setFloatField(val, 64, structField)
 	case reflect.String:
 		structField.SetString(val)
+	case reflect.Struct:
+		return setStructField(val, structField)
 	default:
 		return errors.New("Unknown type")
 	}
+	return nil
+}
+
+func setStructField(val string, field reflect.Value) error {
+	switch field.Interface().(type) {
+	case time.Time:
+		return setTimeField(val, field)
+	default:
+		return errors.New("Unhandled struct type")
+	}
+}
+
+func setTimeField(val string, field reflect.Value) error {
+	time, err := time.Parse(time.RFC3339, val)
+	if err != nil {
+		return err
+	}
+	field.Set(reflect.ValueOf(time))
 	return nil
 }
 
